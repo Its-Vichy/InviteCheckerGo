@@ -6,10 +6,13 @@
 -----
 
 - [X] **Check minimum membercount**
+- [X] **Check verification level (if you don't have phone verified tokens)**
 - [X] **Blacklist checked codes**
-- [X] **Check online members**
+- [X] **Blacklist checked codes from files**
+- [X] **Check % of online members**
 - [X] **Full proxy support**
-- [ ] **Blacklist checked invite**
+- [X] **Blacklist guild id**
+- [X] **Blacklist when checking (avoid duplicate guild without same invite code)**
 
 -----
 
@@ -19,7 +22,8 @@
     "min_percentage": 25,
     "min_members": 1000,
     "proxies_type": "http",
-    "proxies_path": "proxies.txt"
+    "proxies_path": "proxies.txt",
+    "verification_level": 4
 }
 ```
 
