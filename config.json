@@ -1,1 +1,1 @@
-{"threads": 60,"min_percentage": 25,"min_members":1000,"proxies_type":"http","proxies_path": "proxies.txt","verification_level":4}
+{"threads": 60,"min_percentage": 25,"min_members":1000,"proxies_type":"http","proxies_path": "proxies.txt","verification_level":4, "blacklist_word":["NFT"]}

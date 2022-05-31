@@ -64,6 +64,7 @@ type Config struct {
 	MinMembers    int    `json:"min_members"`
 	ProxiesType   string `json:"proxies_type"`
 	ProxiesPath   string `json:"proxies_path"`
+	BlacklistedName []string `json:"blacklist_word"`
 }
 
 func changeTerminalName(name string) {
@@ -169,6 +170,14 @@ func checkInvite(invite string, proxy string, config Config) {
 		//fmt.Printf("Blacklisted invite: %s\n", invite)
 		blacklisted++
 		return
+	}
+
+	for _, word := range config.BlacklistedName {
+		if strings.Contains(code.Guild.Name, word) {
+			//fmt.Printf("Blacklisted word: %s\n", invite)
+			blacklisted++
+			return
+		}
 	}
 
 	// already checked uwu
