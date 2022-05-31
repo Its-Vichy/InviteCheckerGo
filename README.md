@@ -5,6 +5,7 @@
 
 -----
 
+- [X] **Blacklist server by word in name**
 - [X] **Check minimum membercount**
 - [X] **Check verification level (if you don't have phone verified tokens)**
 - [X] **Blacklist checked codes**
@@ -24,6 +25,7 @@
     "proxies_type": "http",
     "proxies_path": "proxies.txt",
     "verification_level": 4
+    "blacklist_word": ["NFT", "= Nitro"]
 }
 ```
 
