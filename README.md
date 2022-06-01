@@ -5,7 +5,7 @@
 
 -----
 
-- [X] **Blacklist server by word in name**
+- [X] **Ultra Fast**
 - [X] **Check minimum membercount**
 - [X] **Check verification level (if you don't have phone verified tokens)**
 - [X] **Blacklist checked codes**
@@ -19,20 +19,24 @@
 
 ```json
 {
-    "threads": 25,
+    "threads": 60,
     "min_percentage": 25,
     "min_members": 1000,
     "proxies_type": "http",
     "proxies_path": "proxies.txt",
-    "verification_level": 4
-    "blacklist_word": ["NFT", "= Nitro"]
+    "verification_level": 4,
+    "blacklist_word": [
+        "NFT",
+        "invites ="
+    ],
+    "debug": true
 }
 ```
 
 -----
 
 <p align='center'>
-  <img src='https://media.discordapp.net/attachments/929816917596860416/930596457344536586/unknown.png'>
+  <img src='https://media.discordapp.net/attachments/979740087531237399/981368705160208434/Capture.PNG'>
 </p>
 
 -----

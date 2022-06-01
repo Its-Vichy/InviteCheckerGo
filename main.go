@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/zenthangplus/goccm"
 )
 
@@ -59,12 +60,23 @@ type InviteCode struct {
 }
 
 type Config struct {
-	Threads       int    `json:"threads"`
-	MinPercentage int    `json:"min_percentage"`
-	MinMembers    int    `json:"min_members"`
-	ProxiesType   string `json:"proxies_type"`
-	ProxiesPath   string `json:"proxies_path"`
+	Threads         int      `json:"threads"`
+	MinPercentage   int      `json:"min_percentage"`
+	MinMembers      int      `json:"min_members"`
+	ProxiesType     string   `json:"proxies_type"`
+	ProxiesPath     string   `json:"proxies_path"`
 	BlacklistedName []string `json:"blacklist_word"`
+	DebugMode       bool     `json:"debug"`
+}
+
+func (cfg Config) Debug(Content string, Color color.Attribute) {
+	if cfg.DebugMode {
+		go func() {
+			color.Set(Color)
+			fmt.Println(Content)
+			color.Unset()
+		}()
+	}
 }
 
 func changeTerminalName(name string) {
@@ -85,10 +97,10 @@ func changeTerminalName(name string) {
 	}
 }
 
-func readLines(path string) ([]string, error) {
+func readLines(path string) []string {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	var lines []string
@@ -98,7 +110,7 @@ func readLines(path string) ([]string, error) {
 	}
 
 	defer file.Close()
-	return lines, scanner.Err()
+	return lines
 }
 
 func Include(item string, list []string) bool {
@@ -114,7 +126,7 @@ func Include(item string, list []string) bool {
 func checkInvite(invite string, proxy string, config Config) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://canary.discord.com/api/v6/invite/%s?with_counts=true", invite), nil)
 	if err != nil {
-		//fmt.Printf("[ERROR] %s", err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 		return
 	}
@@ -129,7 +141,7 @@ func checkInvite(invite string, proxy string, config Config) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		//fmt.Printf("[ERROR] %s", err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 		return
 	}
@@ -137,20 +149,20 @@ func checkInvite(invite string, proxy string, config Config) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		//fmt.Printf("[ERROR] %s", err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 		return
 	}
 
 	cfile, err := os.OpenFile("checked.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		//log.Fatal(err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 	}
 
 	_, err = cfile.WriteString(fmt.Sprintf("%s\n", invite))
 	if err != nil {
-		//log.Fatal(err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 	} else {
 		valid++
@@ -161,20 +173,20 @@ func checkInvite(invite string, proxy string, config Config) {
 	var code = InviteCode{}
 	err = json.Unmarshal(body, &code)
 	if err != nil {
-		//fmt.Printf("Invalid invite: %s\n", invite)
+		config.Debug(fmt.Sprintf("Invalid invite: %s", invite), color.FgRed)
 		invalid++
 		return
 	}
 
 	if Include(code.Guild.ID, blacklist) {
-		//fmt.Printf("Blacklisted invite: %s\n", invite)
+		config.Debug(fmt.Sprintf("Blacklisted invite: %s", invite), color.FgHiMagenta)
 		blacklisted++
 		return
 	}
 
 	for _, word := range config.BlacklistedName {
-		if strings.Contains(code.Guild.Name, word) {
-			//fmt.Printf("Blacklisted word: %s\n", invite)
+		if strings.Contains(word, code.Guild.Name) {
+			config.Debug(fmt.Sprintf("Blacklisted word: %s", invite), color.FgMagenta)
 			blacklisted++
 			return
 		}
@@ -191,26 +203,26 @@ func checkInvite(invite string, proxy string, config Config) {
 
 	percentage := float64(code.ApproximatePresenceCount) / float64(code.ApproximateMemberCount) * 100
 	if code.ApproximateMemberCount < config.MinMembers {
-		//fmt.Printf("%s - Not enough members\n", code.Code)
+		config.Debug(fmt.Sprintf("%s - Not enough members", code.Code), color.FgHiCyan)
 		not_enought++
 		return
 	}
 	if percentage < float64(config.MinPercentage) {
-		//fmt.Printf("%s - Not enough online members\n", code.Code)
+		config.Debug(fmt.Sprintf("%s - Not enough online members", code.Code), color.FgCyan)
 		not_enought++
 		return
 	}
 
-	fmt.Printf("%s - Online: %d/%d (%.2f%%)\n", code.Code, code.ApproximatePresenceCount, code.ApproximateMemberCount, percentage)
+	color.Green("%s - Online: %d/%d (%.2f%%)\n", code.Code, code.ApproximatePresenceCount, code.ApproximateMemberCount, percentage)
 	file, err := os.OpenFile("code.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		//log.Fatal(err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 	}
 
 	_, err = file.WriteString(fmt.Sprintf("%s:%s\n", code.Code, code.Guild.ID))
 	if err != nil {
-		//log.Fatal(err)
+		config.Debug(fmt.Sprintf("[ERROR] %s", err), color.FgHiRed)
 		errors++
 	} else {
 		valid++
@@ -265,15 +277,11 @@ func removeDuplicateStr(strSlice []string) []string {
 func main() {
 	config := loadConfig()
 
-	code, err := readLines("code.txt")
-	lines, err := readLines("invites.txt")
-	proxies, err := readLines(config.ProxiesPath)
-	blacklist, err = readLines("blacklist.txt")
-	checked_codes, err := readLines("checked.txt")
-
-	if err != nil {
-		panic(err)
-	}
+	code := removeDuplicateStr(readLines("code.txt"))
+	lines := removeDuplicateStr(readLines("invites.txt"))
+	proxies := removeDuplicateStr(readLines(config.ProxiesPath))
+	blacklist = removeDuplicateStr(readLines("blacklist.txt"))
+	checked_codes := removeDuplicateStr(readLines("checked.txt"))
 
 	go func() {
 		for {
@@ -284,7 +292,6 @@ func main() {
 			time.Sleep(time.Second * 1)
 			changeTerminalName(fmt.Sprintf("Checked: %d/%d - Invalid: %d - Error: %d - Valid: %d - NotEnought: %d - Blacklisted: %d VerificationLevel: %d", checked, len(lines), invalid, errors, valid, not_enought, blacklisted, higthlevel))
 		}
-
 		fmt.Printf("\n\nChecked: %d/%d - Invalid: %d - Error: %d - Valid: %d - NotEnought: %d - Blacklisted: %d VerificationLevel: %d", checked, len(lines), invalid, errors, valid, not_enought, blacklisted, higthlevel)
 	}()
 
